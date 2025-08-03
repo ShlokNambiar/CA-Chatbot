@@ -1,0 +1,12 @@
+chainlit
+qdrant-client
+sentence-transformers
+python-dotenv
+openai>=1.0.0
+requests
+pandas
+openpyxl
+python-docx
+PyPDF2
+pdfplumber
+scikit-learn
