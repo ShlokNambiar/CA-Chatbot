@@ -10,3 +10,6 @@ python-docx
 PyPDF2
 pdfplumber
 scikit-learn
+uvicorn
+fastapi
+starlette
