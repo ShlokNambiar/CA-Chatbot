@@ -11,6 +11,9 @@ A sophisticated Retrieval-Augmented Generation (RAG) chatbot with AI refinement 
 - **📊 Comprehensive Source Attribution**: Shows document sources, confidence scores, and metadata
 - **🔧 Interactive Controls**: Toggle web search and AI refinement on/off
 - **📱 Modern Chainlit Interface**: Clean, professional chat interface with side panels
+- **🚀 REST API**: Full programmatic access via FastAPI with comprehensive documentation
+- **🇮🇳 India-Specific Focus**: Tailored for Indian chartered accountants with GST, PAN, and tax law expertise
+- **🔄 Dual Interface**: Both web interface and API access for maximum flexibility
 
 ## Architecture
 
@@ -22,6 +25,7 @@ The system consists of several enhanced components:
 4. **OpenAIService** (`openai_service.py`): Professional legal assistant response refinement using GPT-4o-mini
 5. **BraveSearchService** (`brave_search_service.py`): Web search integration for current affairs and recent updates
 6. **Enhanced Chainlit App** (`app.py`): Modern chat interface with toggle controls and metadata display
+7. **API Server** (`api_server.py`): FastAPI server providing REST API endpoints and web interface hosting
 
 ## Setup
 
@@ -71,7 +75,9 @@ The system searches across multiple collections:
 
 ## Usage
 
-### Running the Chatbot
+### Local Development
+
+#### Running the Chainlit Web Interface
 
 Start the Chainlit application:
 
@@ -80,6 +86,39 @@ chainlit run app.py
 ```
 
 The chatbot will be available at `http://localhost:8000`
+
+#### Running the API Server
+
+Start the FastAPI server with both web interface and API endpoints:
+
+```bash
+python api_server.py
+```
+
+The server will be available at:
+- API Documentation: `http://localhost:10000/docs`
+- Web Interface: `http://localhost:10000/chainlit`
+- Health Check: `http://localhost:10000/health`
+
+### Production Deployment
+
+#### Render Deployment
+
+1. Connect your GitHub repository to Render
+2. Set the following environment variables in Render dashboard:
+   - `OPENAI_API_KEY`
+   - `QDRANT_URL`
+   - `QDRANT_API_KEY`
+   - `QDRANT_COLLECTION_NAME`
+   - `QDRANT_TAX_RAG_COLLECTION`
+   - `QDRANT_TAX_DOCUMENTS_COLLECTION`
+   - `BRAVE_API_KEY`
+
+3. Render will automatically use `render.yaml` for deployment configuration
+
+#### API Usage
+
+See [API_DOCUMENTATION.md](API_DOCUMENTATION.md) for detailed API usage examples.
 
 ### Testing the System
 
