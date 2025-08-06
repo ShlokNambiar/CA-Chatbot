@@ -2,7 +2,7 @@ services:
   - type: web
     name: ca-chatbot
     env: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
     startCommand: python api_server.py
     envVars:
       - key: PYTHON_VERSION
@@ -11,5 +11,8 @@ services:
         value: 10000
       - key: HOST
         value: 0.0.0.0
+      - key: DEBUG
+        value: False
     autoDeploy: true
     healthCheckPath: /health
+    plan: starter
