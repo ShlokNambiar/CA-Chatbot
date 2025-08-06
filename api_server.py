@@ -184,12 +184,18 @@ except Exception as e:
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 10000))
     host = os.getenv("HOST", "0.0.0.0")
-    
-    print(f"🚀 Starting server on {host}:{port}")
+
+    print(f"🚀 Starting CA Chatbot API Server on {host}:{port}")
+    print(f"📱 Environment: {'Production' if not os.getenv('DEBUG', 'False').lower() == 'true' else 'Development'}")
+    print(f"🌐 Web Interface will be available at: http://{host}:{port}/chainlit")
+    print(f"📚 API Documentation: http://{host}:{port}/docs")
+    print(f"❤️ Health Check: http://{host}:{port}/health")
+
     uvicorn.run(
         "api_server:app",
         host=host,
         port=port,
         reload=False,
-        log_level="info"
+        log_level="info",
+        access_log=True
     )

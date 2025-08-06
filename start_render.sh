@@ -18,12 +18,12 @@ if [ -z "$QDRANT_URL" ]; then
     echo "⚠️ Warning: QDRANT_URL not set"
 fi
 
-# Start the API server
-echo "🔧 Starting API server..."
+# Start the API server using uvicorn directly
+echo "🔧 Starting API server with uvicorn..."
 echo "📱 API will be available at: https://your-app.onrender.com"
 echo "📚 API Documentation: https://your-app.onrender.com/docs"
 echo "🌐 Web Interface: https://your-app.onrender.com/chainlit"
 echo "🛑 Health Check: https://your-app.onrender.com/health"
 echo ""
 
-python api_server.py
+exec uvicorn api_server:app --host 0.0.0.0 --port $PORT --log-level info
