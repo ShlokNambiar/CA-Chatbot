@@ -2,11 +2,10 @@ services:
   - type: web
     name: ca-chatbot
     env: python
+    runtime: python-3.11.9
     buildCommand: pip install --upgrade pip && pip install -r requirements.txt
     startCommand: python api_server.py
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.0
       - key: PORT
         value: 10000
       - key: HOST
