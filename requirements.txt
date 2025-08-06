@@ -1,16 +1,16 @@
-chainlit
+# Minimal API-only dependencies
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+gunicorn==21.2.0
+pydantic==2.5.0
+
+# Core services
 qdrant-client>=1.7.1
-sentence-transformers
-python-dotenv
 openai>=1.0.0
-requests
-pandas
-openpyxl
-python-docx
-PyPDF2
-pdfplumber
-scikit-learn
-uvicorn[standard]
-fastapi
-pydantic
-gunicorn
+requests==2.31.0
+python-dotenv==1.0.0
+
+# Lightweight document processing
+PyPDF2==3.0.1
+python-docx==1.1.0
+openpyxl==3.1.2

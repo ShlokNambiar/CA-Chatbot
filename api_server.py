@@ -1,34 +1,25 @@
 """
-API Server for CA Chatbot - Supports both web interface and REST API
+Minimal API Server for CA Chatbot - API-only lightweight version
 """
 import os
-import asyncio
 import uvicorn
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
-import threading
-import time
+import datetime
 
-# Import our services
-from response_generator import ResponseGenerator
-from openai_service import OpenAIService
-from brave_search_service import BraveSearchService
-from file_processor import FileProcessor
+# Import minimal services
+from minimal_rag_service import MinimalRAGService
 
-# Initialize services
-response_gen = ResponseGenerator()
-openai_service = OpenAIService()
-brave_search = BraveSearchService()
-file_processor = FileProcessor()
+# Initialize minimal service
+rag_service = MinimalRAGService()
 
-# FastAPI app
+# Minimal FastAPI app
 app = FastAPI(
-    title="CA Chatbot API",
-    description="AI-powered Chartered Accountant Assistant API for Indian CAs",
-    version="1.0.0",
+    title="CA Chatbot API - Minimal",
+    description="Lightweight AI-powered Chartered Accountant Assistant API for Indian CAs",
+    version="2.0.0-minimal",
     docs_url="/docs",
     redoc_url="/redoc"
 )
@@ -64,15 +55,10 @@ class HealthResponse(BaseModel):
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint"""
-    import datetime
-    
-    # Test service connections
-    services_status = {
-        "openai": "healthy" if openai_service else "unavailable",
-        "qdrant": "healthy",  # We'll assume healthy for now
-        "brave_search": "healthy" if brave_search else "unavailable"
-    }
-    
+
+    # Test minimal service connections
+    services_status = await rag_service.check_services()
+
     return HealthResponse(
         status="healthy",
         timestamp=datetime.datetime.now().isoformat(),
@@ -85,29 +71,21 @@ async def chat_endpoint(request: ChatRequest):
     Main chat endpoint for API access
     """
     try:
-        # Generate response using the same logic as the Chainlit app
-        result = response_gen.generate_enhanced_response(
+        # Generate response using minimal RAG service
+        result = await rag_service.generate_response(
             query=request.message,
-            use_web_search=request.web_search_enabled,
-            refine_with_openai=True,
-            uploaded_files=[]  # API doesn't support file uploads yet
+            use_web_search=request.web_search_enabled or False,
+            session_id=request.session_id
         )
-        
-        # Extract sources information
-        sources = []
-        if result.get('document_sources'):
-            sources.extend(result['document_sources'])
-        if result.get('web_search_results', {}).get('results'):
-            sources.extend(result['web_search_results']['results'])
-        
+
         return ChatResponse(
             response=result['response'],
-            sources=sources,
+            sources=result.get('sources', []),
             web_search_used=result.get('web_search_used', False),
             documents_found=result.get('documents_found', 0),
             session_id=request.session_id
         )
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
 
@@ -115,15 +93,7 @@ async def chat_endpoint(request: ChatRequest):
 async def get_collections():
     """Get available document collections"""
     try:
-        # This would typically query your Qdrant service
-        collections = [
-            "TAX-RAG-1",
-            "tax_documents", 
-            "ca_knowledge_base",
-            "test_project_indexing",
-            "hugging_face_docs",
-            "transformers_docs"
-        ]
+        collections = await rag_service.get_collections()
         return {"collections": collections}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching collections: {str(e)}")
@@ -132,54 +102,39 @@ async def get_collections():
 async def root():
     """Root endpoint with API information"""
     return {
-        "message": "CA Chatbot API",
-        "description": "AI-powered Chartered Accountant Assistant for Indian CAs",
+        "message": "CA Chatbot API - Minimal",
+        "description": "Lightweight AI-powered Chartered Accountant Assistant for Indian CAs",
+        "version": "2.0.0-minimal",
+        "features": [
+            "API-only service (no web interface)",
+            "Lightweight memory footprint (<512MB)",
+            "OpenAI GPT integration",
+            "Qdrant vector database",
+            "Document processing (PDF, Word, Excel)",
+            "Brave Search integration",
+            "India-specific CA guidance"
+        ],
         "endpoints": {
             "chat": "/api/chat",
             "health": "/health",
             "collections": "/api/collections",
-            "docs": "/docs",
-            "web_interface": "/chainlit"
+            "docs": "/docs"
         }
     }
 
-# Chainlit integration
-chainlit_app = None
-
-def start_chainlit():
-    """Start Chainlit in a separate thread"""
-    global chainlit_app
-    try:
-        import chainlit as cl
-        from chainlit.server import app as cl_app
-        import app  # Import our Chainlit app
-        chainlit_app = cl_app
-        print("✅ Chainlit app loaded successfully")
-    except Exception as e:
-        print(f"❌ Error loading Chainlit: {e}")
-
-# Mount Chainlit app
 @app.on_event("startup")
 async def startup_event():
-    """Initialize services on startup"""
-    print("🚀 Starting CA Chatbot API Server...")
-    print("📊 Initializing services...")
-    
-    # Start Chainlit in background
-    start_chainlit()
-    
-    print("✅ API Server ready!")
+    """Initialize minimal services on startup"""
+    print("🚀 Starting CA Chatbot API Server (Minimal Version)...")
+    print("📊 Initializing lightweight services...")
+
+    # Initialize RAG service
+    await rag_service.initialize()
+
+    print("✅ Minimal API Server ready!")
     print(f"📱 API Documentation: http://localhost:{os.getenv('PORT', 10000)}/docs")
     print(f"🌐 Health Check: http://localhost:{os.getenv('PORT', 10000)}/health")
-
-# Mount Chainlit app if available
-try:
-    from chainlit.server import app as chainlit_server
-    import app as chainlit_app_module
-    app.mount("/chainlit", chainlit_server)
-    print("✅ Chainlit web interface mounted at /chainlit")
-except Exception as e:
-    print(f"⚠️ Chainlit web interface not available: {e}")
+    print("💡 This is a lightweight API-only version (no web interface)")
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 10000))

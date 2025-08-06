@@ -1,8 +1,8 @@
-# CA Chatbot API Documentation
+# CA Chatbot API Documentation - Minimal Version
 
 ## Overview
 
-The CA Chatbot API provides both a web interface and REST API endpoints for interacting with the AI-powered Chartered Accountant Assistant designed for Indian CAs.
+The CA Chatbot API (Minimal) provides lightweight REST API endpoints for interacting with the AI-powered Chartered Accountant Assistant designed for Indian CAs. This version is optimized for low memory usage (<512MB) and focuses on API-only functionality without the web interface.
 
 ## Base URL
 
@@ -206,14 +206,16 @@ Error responses include a detail message:
 }
 ```
 
-## Features
+## Features (Minimal Version)
 
 - **India-specific CA guidance**: Focused on Indian tax laws, GST, and PAN requirements
-- **Document retrieval**: Access to comprehensive knowledge base
-- **Web search integration**: Optional current affairs and recent updates
+- **Lightweight architecture**: Memory usage under 512MB
+- **Document retrieval**: Access to Qdrant vector database without heavy ML dependencies
+- **Web search integration**: Optional current affairs via Brave Search API
 - **AI-powered responses**: Enhanced with OpenAI GPT-4o-mini
-- **Multiple interfaces**: Both REST API and web interface
-- **Real-time processing**: Fast response times with vector database
+- **API-only interface**: No web interface, pure REST API
+- **Fast response times**: Optimized for quick processing
+- **Document processing**: PDF, Word, Excel support without pandas/scikit-learn
 
 ## Rate Limits
 

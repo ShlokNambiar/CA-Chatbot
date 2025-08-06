@@ -1,19 +1,19 @@
-# Enhanced CA Legal Assistant RAG Chatbot
+# CA Assistant - Minimal API Version
 
-A sophisticated Retrieval-Augmented Generation (RAG) chatbot with AI refinement and web search capabilities, designed specifically as a legal assistant for chartered accountants.
+A lightweight, API-only Retrieval-Augmented Generation (RAG) service specifically designed for Indian Chartered Accountants. Optimized for low memory usage (<512MB) while maintaining core functionality for document search, AI response generation, and web search integration.
 
-## 🎯 Enhanced Features
+## 🎯 Minimal Features
 
-- **📚 Knowledge Base Search**: Retrieves information from indexed documents in Qdrant vector database
-- **🤖 AI-Powered Response Refinement**: Uses OpenAI GPT-4o-mini to refine responses with professional legal assistant personality
-- **🌐 Toggleable Web Search**: Brave Search API integration for current affairs and recent updates
-- **⚖️ Legal Assistant Personality**: Professional, authoritative responses tailored for chartered accountants
-- **📊 Comprehensive Source Attribution**: Shows document sources, confidence scores, and metadata
-- **🔧 Interactive Controls**: Toggle web search and AI refinement on/off
-- **📱 Modern Chainlit Interface**: Clean, professional chat interface with side panels
-- **🚀 REST API**: Full programmatic access via FastAPI with comprehensive documentation
-- **🇮🇳 India-Specific Focus**: Tailored for Indian chartered accountants with GST, PAN, and tax law expertise
-- **🔄 Dual Interface**: Both web interface and API access for maximum flexibility
+- **📚 Lightweight Document Search**: Retrieves information from Qdrant vector database without heavy ML dependencies
+- **🤖 AI-Powered Responses**: Uses OpenAI GPT-4o-mini with India-specific CA prompts
+- **🌐 Optional Web Search**: Brave Search API integration for current affairs
+- **⚖️ India-Specific Focus**: Tailored for Indian chartered accountants with GST, PAN, and tax law expertise
+- **📊 Source Attribution**: Shows document and web sources in responses
+- **🚀 Pure REST API**: Lightweight FastAPI server with comprehensive documentation
+- **💾 Memory Optimized**: Runs under 512MB RAM on Render's starter plan
+- **📄 Document Processing**: PDF, Word, Excel support without pandas/scikit-learn
+- **⚡ Fast Response Times**: Optimized for quick processing without heavy ML libraries
+- **🔧 Production Ready**: Gunicorn + uvicorn workers for reliable deployment
 
 ## Architecture
 

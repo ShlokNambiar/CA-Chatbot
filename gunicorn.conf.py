@@ -1,20 +1,25 @@
-# Gunicorn configuration file for CA Chatbot
+# Gunicorn configuration file for CA Chatbot - Minimal Version
 import os
 
 # Server socket
 bind = f"0.0.0.0:{os.getenv('PORT', 10000)}"
-backlog = 2048
+backlog = 512
 
-# Worker processes
+# Worker processes (minimal memory footprint)
 workers = 1
 worker_class = "uvicorn.workers.UvicornWorker"
-worker_connections = 1000
-timeout = 120
+worker_connections = 50
+timeout = 30
 keepalive = 2
 
-# Restart workers after this many requests, to help prevent memory leaks
-max_requests = 1000
-max_requests_jitter = 100
+# Aggressive memory management
+max_requests = 50
+max_requests_jitter = 25
+
+# Memory optimization for <512MB
+preload_app = False
+worker_tmp_dir = "/dev/shm"
+max_worker_memory = 400  # MB
 
 # Logging
 accesslog = "-"
