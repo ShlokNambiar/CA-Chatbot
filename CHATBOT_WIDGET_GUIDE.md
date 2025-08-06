@@ -74,10 +74,11 @@ The CA Chatbot widget is now fully integrated with the minimal CA Chatbot API, p
 ## 🚀 **Deployment Status**
 
 ### **API Server:**
-- **URL:** `https://ca-chatbot-minimal.onrender.com`
-- **Status:** Deployed on Render (starter plan compatible)
-- **Memory:** Optimized for <512MB usage
-- **Features:** Full RAG functionality without heavy ML dependencies
+- **URL:** `https://ca-chatbot-ld8v.onrender.com`
+- **Status:** ✅ Successfully deployed on Render (starter plan)
+- **Memory:** ✅ Optimized for <512MB usage
+- **Features:** ✅ Full RAG functionality without heavy ML dependencies
+- **Health:** ✅ All services (OpenAI, Qdrant, Brave Search) healthy
 
 ### **Widget Integration:**
 - **Location:** Integrated into `index.html`

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CA Chatbot Widget Connection Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f0f2f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-result {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .loading {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        button {
+            background: #0066cc;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #0052a3;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-online {
+            background: #28a745;
+        }
+        .status-offline {
+            background: #dc3545;
+        }
+        .chat-demo {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #0066cc;
+            color: white;
+            padding: 15px;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,102,204,0.3);
+            font-weight: 600;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧮 CA Chatbot Widget Connection Test</h1>
+        
+        <div id="connection-status">
+            <h3>🔌 API Connection Status</h3>
+            <p><span class="status-indicator status-offline" id="status-dot"></span><span id="status-text">Testing connection...</span></p>
+        </div>
+
+        <div class="test-section">
+            <h3>🧪 Quick Tests</h3>
+            <button onclick="testConnection()">Test API Connection</button>
+            <button onclick="testChatAPI()">Test Chat Functionality</button>
+            <button onclick="testWebSearch()">Test Web Search</button>
+        </div>
+
+        <div id="test-results"></div>
+
+        <div class="instructions">
+            <h3>📋 Instructions</h3>
+            <ol>
+                <li>Click "Test API Connection" to verify the API is accessible</li>
+                <li>Click "Test Chat Functionality" to test a sample CA query</li>
+                <li>Click "Test Web Search" to verify Brave Search integration</li>
+                <li>If all tests pass, the chatbot widget in your main site should work</li>
+                <li>Check the browser console for any additional error messages</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="chat-demo" onclick="window.open('index.html', '_blank')">
+        💬 Test Widget
+    </div>
+
+    <script>
+        const API_BASE = 'https://ca-chatbot-ld8v.onrender.com';
+        
+        function showResult(content, type = 'success') {
+            const resultsDiv = document.getElementById('test-results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${type}`;
+            resultDiv.textContent = content;
+            resultsDiv.appendChild(resultDiv);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        function updateStatus(online, text) {
+            const statusDot = document.getElementById('status-dot');
+            const statusText = document.getElementById('status-text');
+            
+            statusDot.className = `status-indicator ${online ? 'status-online' : 'status-offline'}`;
+            statusText.textContent = text;
+        }
+
+        async function testConnection() {
+            showResult('Testing API connection...', 'loading');
+            updateStatus(false, 'Testing connection...');
+            
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                
+                if (response.ok && data.status === 'healthy') {
+                    updateStatus(true, 'API Online - All services healthy');
+                    showResult(
+                        `✅ API Connection Successful!\n\n` +
+                        `Status: ${data.status}\n` +
+                        `Timestamp: ${data.timestamp}\n` +
+                        `OpenAI: ${data.services.openai}\n` +
+                        `Qdrant: ${data.services.qdrant}\n` +
+                        `Brave Search: ${data.services.brave_search}`,
+                        'success'
+                    );
+                } else {
+                    updateStatus(false, 'API Error');
+                    showResult(`❌ API Health Check Failed: ${JSON.stringify(data)}`, 'error');
+                }
+            } catch (error) {
+                updateStatus(false, 'Connection Failed');
+                showResult(`❌ Connection Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testChatAPI() {
+            showResult('Testing chat API with GST query...', 'loading');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: 'What are the GST rates for software services in India?',
+                        web_search_enabled: false
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult(
+                        `✅ Chat API Working!\n\n` +
+                        `Response Length: ${data.response.length} characters\n` +
+                        `Documents Found: ${data.documents_found}\n` +
+                        `Web Search Used: ${data.web_search_used}\n` +
+                        `Sources: ${data.sources.length}\n\n` +
+                        `Sample Response: ${data.response.substring(0, 200)}...`,
+                        'success'
+                    );
+                } else {
+                    showResult(`❌ Chat API Failed: ${JSON.stringify(data)}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Chat API Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testWebSearch() {
+            showResult('Testing web search functionality...', 'loading');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: 'Latest GST updates 2024 India',
+                        web_search_enabled: true
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const webSources = data.sources.filter(s => s.type === 'web');
+                    showResult(
+                        `✅ Web Search Working!\n\n` +
+                        `Web Search Used: ${data.web_search_used}\n` +
+                        `Web Sources Found: ${webSources.length}\n` +
+                        `Total Sources: ${data.sources.length}\n` +
+                        `Documents Found: ${data.documents_found}\n\n` +
+                        `Web Sources:\n${webSources.map(s => `• ${s.title} (${s.url})`).join('\n')}`,
+                        'success'
+                    );
+                } else {
+                    showResult(`❌ Web Search Test Failed: ${JSON.stringify(data)}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Web Search Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-test connection on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(testConnection, 1000);
+        });
+    </script>
+</body>
+</html>
