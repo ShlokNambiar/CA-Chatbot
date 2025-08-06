@@ -3,15 +3,20 @@ services:
     name: ca-chatbot
     env: python
     runtime: python-3.11.9
-    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
-    startCommand: uvicorn api_server:app --host 0.0.0.0 --port $PORT
+    buildCommand: |
+      pip install --upgrade pip
+      pip install -r requirements.txt
+    startCommand: |
+      uvicorn api_server:app --host 0.0.0.0 --port $PORT --log-level info
     envVars:
       - key: PORT
         value: 10000
       - key: HOST
         value: 0.0.0.0
       - key: DEBUG
-        value: False
-    autoDeploy: true
+        value: "false"
+      - key: PYTHONPATH
+        value: "."
     healthCheckPath: /health
+    autoDeploy: true
     plan: starter
