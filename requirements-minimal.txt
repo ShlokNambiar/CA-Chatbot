@@ -1,0 +1,16 @@
+# Ultra-minimal dependencies for maximum compatibility
+fastapi
+uvicorn
+gunicorn
+pydantic
+
+# Core services
+qdrant-client
+openai
+requests
+python-dotenv
+
+# Document processing
+PyPDF2
+python-docx
+openpyxl
