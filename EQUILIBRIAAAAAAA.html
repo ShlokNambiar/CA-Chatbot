@@ -559,20 +559,20 @@ if (typeof window !== "undefined") {
       width: 60px;
       height: 60px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #0066cc, #004499);
+      background: linear-gradient(135deg, rgb(128, 210, 83), rgb(92, 242, 142));
       border: none;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
+      box-shadow: 0 4px 12px rgba(128, 210, 83, 0.4);
       transition: all 0.3s ease;
-      color: white;
+      color: rgb(0, 35, 41);
     }
 
     .ca-chat-toggle:hover {
       transform: scale(1.1);
-      box-shadow: 0 6px 16px rgba(0, 102, 204, 0.4);
+      box-shadow: 0 6px 16px rgba(128, 210, 83, 0.6);
     }
 
     .ca-chat-interface {
@@ -600,7 +600,7 @@ if (typeof window !== "undefined") {
     }
 
     .ca-chat-header {
-      background: linear-gradient(135deg, #0066cc, #004499);
+      background: linear-gradient(135deg, rgb(0, 35, 41), rgb(0, 50, 60));
       color: white;
       padding: 16px;
       display: flex;
@@ -643,7 +643,7 @@ if (typeof window !== "undefined") {
     }
 
     .ca-control-btn.active {
-      background: rgba(146, 241, 66, 0.3);
+      background: rgba(128, 210, 83, 0.4);
     }
 
     .ca-chat-messages {
@@ -674,8 +674,9 @@ if (typeof window !== "undefined") {
     }
 
     .ca-message.user .ca-message-bubble {
-      background: #0066cc;
-      color: white;
+      background: linear-gradient(135deg, rgb(128, 210, 83), rgb(92, 242, 142));
+      color: rgb(0, 35, 41);
+      font-weight: 500;
     }
 
     .ca-message.bot .ca-message-bubble {
@@ -695,13 +696,13 @@ if (typeof window !== "undefined") {
     }
 
     .ca-message.user .ca-message-avatar {
-      background: #0066cc;
-      color: white;
+      background: linear-gradient(135deg, rgb(128, 210, 83), rgb(92, 242, 142));
+      color: rgb(0, 35, 41);
     }
 
     .ca-message.bot .ca-message-avatar {
-      background: #92f142;
-      color: #333;
+      background: linear-gradient(135deg, rgb(0, 35, 41), rgb(0, 50, 60));
+      color: rgb(92, 242, 142);
     }
 
     .ca-sources {
@@ -729,7 +730,7 @@ if (typeof window !== "undefined") {
     }
 
     .ca-source-link {
-      color: #0066cc;
+      color: rgb(128, 210, 83);
       text-decoration: none;
       font-size: 11px;
     }
@@ -760,25 +761,26 @@ if (typeof window !== "undefined") {
 
     .ca-input-field:focus {
       outline: none;
-      border-color: #0066cc;
+      border-color: rgb(128, 210, 83);
     }
 
     .ca-send-btn {
       width: 40px;
       height: 40px;
       border-radius: 50%;
-      background: #0066cc;
+      background: linear-gradient(135deg, rgb(128, 210, 83), rgb(92, 242, 142));
       border: none;
-      color: white;
+      color: rgb(0, 35, 41);
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.2s;
+      transition: all 0.2s;
     }
 
     .ca-send-btn:hover:not(:disabled) {
-      background: #0052a3;
+      background: linear-gradient(135deg, rgb(92, 242, 142), rgb(128, 210, 83));
+      transform: scale(1.05);
     }
 
     .ca-send-btn:disabled {
@@ -804,7 +806,7 @@ if (typeof window !== "undefined") {
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: #0066cc;
+      background: rgb(128, 210, 83);
       animation: ca-typing 1.4s infinite;
     }
 
@@ -1047,16 +1049,20 @@ if (typeof window !== "undefined") {
 
     async checkAPIHealth() {
       try {
+        console.log('Checking API health at:', `${CONFIG.apiBase}/health`);
         const response = await fetch(`${CONFIG.apiBase}/health`);
         const data = await response.json();
+        console.log('API health response:', data);
 
         if (response.ok && data.status === 'healthy') {
           document.getElementById('ca-connection-status').textContent = 'Online';
           document.getElementById('ca-connection-status').className = 'ca-status-online';
+          console.log('API is healthy');
         } else {
-          throw new Error('API unhealthy');
+          throw new Error('API unhealthy: ' + JSON.stringify(data));
         }
       } catch (error) {
+        console.error('API health check failed:', error);
         document.getElementById('ca-connection-status').textContent = 'Offline';
         document.getElementById('ca-connection-status').className = 'ca-status-offline';
       }
@@ -1122,6 +1128,8 @@ if (typeof window !== "undefined") {
 
       if (!message || this.isLoading) return;
 
+      console.log('Sending message:', message);
+
       // Add user message
       this.addMessage(message, true);
       input.value = '';
@@ -1133,27 +1141,36 @@ if (typeof window !== "undefined") {
       this.showTyping();
 
       try {
+        const requestBody = {
+          message: message,
+          web_search_enabled: this.webSearchEnabled,
+          session_id: this.sessionId
+        };
+
+        console.log('Sending request to:', `${CONFIG.apiBase}/api/chat`);
+        console.log('Request body:', requestBody);
+
         const response = await fetch(`${CONFIG.apiBase}/api/chat`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({
-            message: message,
-            web_search_enabled: this.webSearchEnabled,
-            session_id: this.sessionId
-          })
+          body: JSON.stringify(requestBody)
         });
 
+        console.log('Response status:', response.status);
         const data = await response.json();
+        console.log('Response data:', data);
 
         if (response.ok) {
           this.addMessage(data.response, false, data.sources);
           this.checkAPIHealth(); // Update status
         } else {
+          console.error('API error:', data);
           this.addMessage(`Sorry, I encountered an error: ${data.detail || 'Unknown error'}`, false);
         }
       } catch (error) {
+        console.error('Network error:', error);
         this.addMessage(`I'm currently offline. Please try again later. (${error.message})`, false);
       } finally {
         this.isLoading = false;
@@ -1164,18 +1181,24 @@ if (typeof window !== "undefined") {
   }
 
   // Initialize the chatbot widget when DOM is ready
+  function initializeChatbot() {
+    try {
+      console.log('Initializing CA Chatbot Widget...');
+      new CAChatbotWidget();
+      console.log('CA Chatbot Widget initialized successfully');
+    } catch (error) {
+      console.error('Error initializing CA Chatbot Widget:', error);
+    }
+  }
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
       // Wait a bit to avoid conflicts with Framer
-      setTimeout(() => {
-        new CAChatbotWidget();
-      }, 1000);
+      setTimeout(initializeChatbot, 2000);
     });
   } else {
     // DOM is already ready
-    setTimeout(() => {
-      new CAChatbotWidget();
-    }, 1000);
+    setTimeout(initializeChatbot, 2000);
   }
 })();
 </script>
