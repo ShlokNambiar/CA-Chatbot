@@ -185,38 +185,44 @@ class MinimalRAGService:
         
         return {"results": [], "used": False}
     
-    async def generate_response(self, query: str, use_web_search: bool = False, session_id: Optional[str] = None) -> Dict[str, Any]:
-        """Generate response using minimal RAG approach"""
-        
-        # Search documents
-        document_results = await self.search_documents(query)
-        
+    async def generate_response(self, query: str, use_web_search: bool = False, session_id: Optional[str] = None, document_context: Optional[str] = None) -> Dict[str, Any]:
+        """Generate response using minimal RAG approach with optional document context"""
+
+        # Search documents (only if no specific document context provided)
+        document_results = []
+        if not document_context:
+            document_results = await self.search_documents(query)
+
         # Web search if enabled
         web_results = {"results": [], "used": False}
         if use_web_search:
             web_results = await self.web_search(query)
-        
+
         # Prepare context
         context_parts = []
-        
-        # Add document context
+
+        # Add uploaded document context (highest priority)
+        if document_context:
+            context_parts.append(f"UPLOADED DOCUMENT CONTENT:\n{document_context}")
+
+        # Add document search results
         for doc in document_results:
-            context_parts.append(f"Document: {doc['text'][:500]}...")
-        
+            context_parts.append(f"Knowledge Base Document: {doc['text'][:500]}...")
+
         # Add web context
         for web_result in web_results["results"]:
-            context_parts.append(f"Web: {web_result['title']} - {web_result['description']}")
-        
+            context_parts.append(f"Web Source: {web_result['title']} - {web_result['description']}")
+
         context = "\n\n".join(context_parts)
-        
+
         # Generate response with OpenAI
-        response_text = await self.generate_openai_response(query, context)
-        
+        response_text = await self.generate_openai_response(query, context, has_document=bool(document_context))
+
         # Prepare sources
         sources = []
         sources.extend([{"type": "document", "content": doc["text"][:200], "source": doc["source"]} for doc in document_results])
         sources.extend([{"type": "web", "title": web["title"], "url": web["url"]} for web in web_results["results"]])
-        
+
         return {
             "response": response_text,
             "sources": sources,
@@ -224,13 +230,35 @@ class MinimalRAGService:
             "web_search_used": web_results["used"]
         }
     
-    async def generate_openai_response(self, query: str, context: str) -> str:
-        """Generate response using OpenAI"""
+    async def generate_openai_response(self, query: str, context: str, has_document: bool = False) -> str:
+        """Generate response using OpenAI with optional document analysis focus"""
         if not self.openai_client:
             return f"I understand you're asking about: {query}. However, OpenAI service is not configured."
-        
+
         try:
-            system_prompt = """You are a professional AI assistant specifically designed for Indian chartered accountants and primarily serves users in India. You provide accurate, comprehensive, and practical advice tailored to Indian tax laws, GST regulations, PAN requirements, and other India-specific accounting and compliance matters.
+            if has_document:
+                system_prompt = """You are a professional AI assistant specifically designed for Indian chartered accountants and primarily serves users in India. You are now analyzing an uploaded document.
+
+DOCUMENT ANALYSIS INSTRUCTIONS:
+- Carefully analyze the provided document content
+- Focus on CA-specific insights, compliance issues, tax implications
+- Identify any regulatory requirements or compliance gaps
+- Provide specific recommendations based on Indian tax laws and GST regulations
+- Reference specific sections or data from the document
+- Highlight any potential issues or areas of concern
+- Suggest next steps or actions if applicable
+
+Your responses should be:
+- Professional and authoritative
+- Specific to Indian regulations and practices
+- Comprehensive analysis of the document
+- Well-structured with clear explanations
+- Include specific references to document content
+- Focus on actionable insights for CA practice
+
+Always prioritize the uploaded document content over general knowledge."""
+            else:
+                system_prompt = """You are a professional AI assistant specifically designed for Indian chartered accountants and primarily serves users in India. You provide accurate, comprehensive, and practical advice tailored to Indian tax laws, GST regulations, PAN requirements, and other India-specific accounting and compliance matters.
 
 Your responses should be:
 - Professional and authoritative

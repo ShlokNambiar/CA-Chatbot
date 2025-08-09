@@ -837,6 +837,50 @@ if (typeof window !== "undefined") {
       color: #dc3545;
     }
 
+    .ca-file-status {
+      padding: 8px 16px;
+      background: #e8f5e8;
+      border-top: 1px solid #c3e6cb;
+      font-size: 12px;
+      color: #155724;
+    }
+
+    .ca-file-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .ca-file-remove {
+      background: none;
+      border: none;
+      color: #dc3545;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      padding: 0;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ca-file-remove:hover {
+      background: rgba(220, 53, 69, 0.1);
+      border-radius: 50%;
+    }
+
+    .ca-file-message {
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+      color: #856404;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      margin: 8px 0;
+    }
+
     @media (max-width: 480px) {
       .ca-chat-interface {
         width: calc(100vw - 40px);
@@ -864,6 +908,11 @@ if (typeof window !== "undefined") {
         <div class="ca-chat-subtitle">India-specific tax & compliance guidance</div>
       </div>
       <div class="ca-chat-controls">
+        <button class="ca-control-btn" id="ca-file-upload-btn" title="Upload Document">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+          </svg>
+        </button>
         <button class="ca-control-btn" id="ca-web-search-toggle" title="Toggle Web Search">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M15.5 14H14.71L14.43 13.73C15.41 12.59 16 11.11 16 9.5C16 5.91 13.09 3 9.5 3S3 5.91 3 9.5S5.91 16 9.5 16C11.11 16 12.59 15.41 13.73 14.43L14 14.71V15.5L19 20.49L20.49 19L15.5 14ZM9.5 14C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5S14 7.01 14 9.5S11.99 14 9.5 14Z"/>
@@ -914,6 +963,17 @@ if (typeof window !== "undefined") {
       </button>
     </div>
 
+    <!-- Hidden file input -->
+    <input type="file" id="ca-file-input" style="display: none;" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv">
+
+    <!-- File upload status -->
+    <div class="ca-file-status" id="ca-file-status" style="display: none;">
+      <div class="ca-file-info">
+        <span id="ca-file-name">No file selected</span>
+        <button class="ca-file-remove" id="ca-file-remove">×</button>
+      </div>
+    </div>
+
     <!-- Status -->
     <div class="ca-status" id="ca-status">
       <span id="ca-connection-status" class="ca-status-offline">Connecting...</span>
@@ -941,6 +1001,8 @@ if (typeof window !== "undefined") {
       this.isLoading = false;
       this.webSearchEnabled = CONFIG.webSearchEnabled;
       this.sessionId = this.generateSessionId();
+      this.uploadedFile = null;
+      this.uploadedFileContent = null;
 
       this.init();
     }
@@ -964,6 +1026,36 @@ if (typeof window !== "undefined") {
       // Close button
       document.getElementById('ca-chat-close').addEventListener('click', () => {
         this.closeChat();
+      });
+
+      // File upload button
+      document.getElementById('ca-file-upload-btn').addEventListener('click', () => {
+        this.openFileDialog();
+      });
+
+      // File input
+      document.getElementById('ca-file-input').addEventListener('change', (e) => {
+        this.handleFileSelect(e);
+      });
+
+      // File remove button
+      document.getElementById('ca-file-remove').addEventListener('click', () => {
+        this.removeFile();
+      });
+
+      // File upload button
+      document.getElementById('ca-file-upload-btn').addEventListener('click', () => {
+        this.openFileDialog();
+      });
+
+      // File input
+      document.getElementById('ca-file-input').addEventListener('change', (e) => {
+        this.handleFileSelect(e);
+      });
+
+      // File remove button
+      document.getElementById('ca-file-remove').addEventListener('click', () => {
+        this.removeFile();
       });
 
       // Web search toggle
@@ -1033,6 +1125,87 @@ if (typeof window !== "undefined") {
         toggle.classList.remove('active');
         status.textContent = 'Web Search: OFF';
       }
+    }
+
+    openFileDialog() {
+      document.getElementById('ca-file-input').click();
+    }
+
+    async handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      // Check file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        this.addMessage('File too large. Maximum size is 10MB.', false);
+        return;
+      }
+
+      // Check file type
+      const allowedTypes = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.csv'];
+      const fileExt = '.' + file.name.split('.').pop().toLowerCase();
+      if (!allowedTypes.includes(fileExt)) {
+        this.addMessage(`Unsupported file type. Supported types: ${allowedTypes.join(', ')}`, false);
+        return;
+      }
+
+      // Show uploading status
+      this.addMessage(`📄 Uploading ${file.name}...`, false);
+
+      try {
+        // Upload file to API
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(`${CONFIG.apiBase}/api/upload`, {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          this.uploadedFile = {
+            name: result.file_name,
+            type: result.file_type,
+            content: result.content
+          };
+
+          // Show file status
+          document.getElementById('ca-file-name').textContent = result.file_name;
+          document.getElementById('ca-file-status').style.display = 'block';
+
+          // Update file upload button to show active state
+          document.getElementById('ca-file-upload-btn').classList.add('active');
+
+          // Add success message with summary
+          let message = `✅ File uploaded successfully: ${result.file_name}`;
+          if (result.summary) {
+            message += `\n\n📋 Summary: ${result.summary}`;
+          }
+          this.addMessage(message, false);
+
+          // Update placeholder
+          document.getElementById('ca-input-field').placeholder =
+            `Ask questions about ${result.file_name} or general CA topics...`;
+        } else {
+          this.addMessage(`❌ Upload failed: ${result.error}`, false);
+        }
+      } catch (error) {
+        console.error('File upload error:', error);
+        this.addMessage(`❌ Upload failed: ${error.message}`, false);
+      }
+    }
+
+    removeFile() {
+      this.uploadedFile = null;
+      document.getElementById('ca-file-status').style.display = 'none';
+      document.getElementById('ca-file-input').value = '';
+      document.getElementById('ca-file-upload-btn').classList.remove('active');
+      document.getElementById('ca-input-field').placeholder =
+        'Ask about GST, tax compliance, PAN requirements...';
+
+      this.addMessage('📄 File removed. You can now ask general questions.', false);
     }
 
     updateSendButton() {
@@ -1141,16 +1314,33 @@ if (typeof window !== "undefined") {
       this.showTyping();
 
       try {
-        const requestBody = {
-          message: message,
-          web_search_enabled: this.webSearchEnabled,
-          session_id: this.sessionId
-        };
+        let endpoint = `${CONFIG.apiBase}/api/chat`;
+        let requestBody;
 
-        console.log('Sending request to:', `${CONFIG.apiBase}/api/chat`);
+        // Check if we have an uploaded file to analyze
+        if (this.uploadedFile && this.uploadedFile.content) {
+          endpoint = `${CONFIG.apiBase}/api/analyze-file`;
+          requestBody = {
+            message: message,
+            file_content: this.uploadedFile.content,
+            file_name: this.uploadedFile.name,
+            file_type: this.uploadedFile.type,
+            web_search_enabled: this.webSearchEnabled,
+            session_id: this.sessionId
+          };
+          console.log('Analyzing uploaded file:', this.uploadedFile.name);
+        } else {
+          requestBody = {
+            message: message,
+            web_search_enabled: this.webSearchEnabled,
+            session_id: this.sessionId
+          };
+        }
+
+        console.log('Sending request to:', endpoint);
         console.log('Request body:', requestBody);
 
-        const response = await fetch(`${CONFIG.apiBase}/api/chat`, {
+        const response = await fetch(endpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
