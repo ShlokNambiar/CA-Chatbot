@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CA Chatbot - Multimodal Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, rgb(0, 35, 41), rgb(0, 50, 60));
+            min-height: 100vh;
+            color: white;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+        h1 {
+            color: rgb(92, 242, 142);
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .test-section h3 {
+            color: rgb(128, 210, 83);
+            margin-top: 0;
+        }
+        .file-upload {
+            border: 2px dashed rgb(128, 210, 83);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin: 15px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .file-upload:hover {
+            background: rgba(128, 210, 83, 0.1);
+        }
+        .file-upload.dragover {
+            background: rgba(128, 210, 83, 0.2);
+            border-color: rgb(92, 242, 142);
+        }
+        input[type="file"] {
+            display: none;
+        }
+        button {
+            background: linear-gradient(135deg, rgb(128, 210, 83), rgb(92, 242, 142));
+            color: rgb(0, 35, 41);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        button:hover {
+            transform: scale(1.05);
+        }
+        button:disabled {
+            background: #666;
+            color: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .result {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+        .success {
+            border-left: 4px solid rgb(92, 242, 142);
+        }
+        .error {
+            border-left: 4px solid rgb(247, 129, 129);
+        }
+        .loading {
+            border-left: 4px solid rgb(230, 226, 138);
+        }
+        .file-info {
+            background: rgba(128, 210, 83, 0.2);
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .chat-area {
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .user-message {
+            background: rgba(128, 210, 83, 0.3);
+            text-align: right;
+        }
+        .bot-message {
+            background: rgba(255,255,255,0.1);
+        }
+        textarea {
+            width: 100%;
+            min-height: 60px;
+            padding: 10px;
+            border: 1px solid rgb(128, 210, 83);
+            border-radius: 6px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-family: inherit;
+            resize: vertical;
+        }
+        textarea::placeholder {
+            color: rgba(255,255,255,0.7);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧮 CA Chatbot - Multimodal File Analysis</h1>
+        
+        <div class="test-section">
+            <h3>📁 File Upload Test</h3>
+            <div class="file-upload" onclick="document.getElementById('fileInput').click()">
+                <div id="uploadText">
+                    📄 Click to upload or drag & drop files<br>
+                    <small>Supported: PDF, Word, Excel, CSV (max 10MB)</small>
+                </div>
+            </div>
+            <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv">
+            
+            <div id="fileInfo" class="file-info" style="display: none;">
+                <strong>📄 Uploaded File:</strong> <span id="fileName"></span><br>
+                <strong>📊 Type:</strong> <span id="fileType"></span><br>
+                <strong>📏 Size:</strong> <span id="fileSize"></span>
+                <button onclick="removeFile()">Remove File</button>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>💬 Chat with Document</h3>
+            <textarea id="messageInput" placeholder="Ask questions about the uploaded document or general CA topics..."></textarea>
+            <br>
+            <button onclick="sendMessage()" id="sendBtn" disabled>Send Message</button>
+            <button onclick="testAPI()">Test API Connection</button>
+            <button onclick="clearChat()">Clear Chat</button>
+        </div>
+
+        <div class="chat-area" id="chatArea">
+            <div class="message bot-message">
+                🧮 <strong>CA Assistant:</strong> Hello! Upload a document (PDF, Word, Excel, CSV) and I'll analyze it for CA-specific insights, compliance issues, and tax implications.
+            </div>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://ca-chatbot-ld8v.onrender.com'; // Deployed Render URL
+        let uploadedFile = null;
+        let uploadedFileContent = null;
+
+        // File upload handling
+        document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+        document.getElementById('messageInput').addEventListener('input', updateSendButton);
+
+        // Drag and drop
+        const uploadArea = document.querySelector('.file-upload');
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelect({target: {files: files}});
+            }
+        });
+
+        function updateSendButton() {
+            const messageInput = document.getElementById('messageInput');
+            const sendBtn = document.getElementById('sendBtn');
+            sendBtn.disabled = !messageInput.value.trim();
+        }
+
+        async function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            showResult('📤 Uploading file...', 'loading');
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch(`${API_BASE}/api/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    uploadedFile = {
+                        name: result.file_name,
+                        type: result.file_type,
+                        content: result.content
+                    };
+
+                    // Show file info
+                    document.getElementById('fileName').textContent = result.file_name;
+                    document.getElementById('fileType').textContent = result.file_type;
+                    document.getElementById('fileSize').textContent = formatFileSize(file.size);
+                    document.getElementById('fileInfo').style.display = 'block';
+                    document.getElementById('uploadText').innerHTML = '✅ File uploaded successfully!<br><small>Upload another file to replace</small>';
+
+                    showResult(`✅ File uploaded successfully!\n\nFile: ${result.file_name}\nType: ${result.file_type}\nSummary: ${result.summary || 'No summary available'}`, 'success');
+
+                    // Update placeholder
+                    document.getElementById('messageInput').placeholder = `Ask questions about ${result.file_name} or general CA topics...`;
+                } else {
+                    showResult(`❌ Upload failed: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Upload error: ${error.message}`, 'error');
+            }
+        }
+
+        function removeFile() {
+            uploadedFile = null;
+            uploadedFileContent = null;
+            document.getElementById('fileInfo').style.display = 'none';
+            document.getElementById('fileInput').value = '';
+            document.getElementById('uploadText').innerHTML = '📄 Click to upload or drag & drop files<br><small>Supported: PDF, Word, Excel, CSV (max 10MB)</small>';
+            document.getElementById('messageInput').placeholder = 'Ask questions about CA topics...';
+            
+            addMessage('📄 File removed. You can now ask general questions.', false);
+        }
+
+        async function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            
+            if (!message) return;
+
+            // Add user message to chat
+            addMessage(message, true);
+            messageInput.value = '';
+            updateSendButton();
+
+            // Show loading
+            showResult('🤔 Analyzing...', 'loading');
+
+            try {
+                let endpoint = `${API_BASE}/api/chat`;
+                let requestBody = {
+                    message: message,
+                    web_search_enabled: true,
+                    session_id: 'test_session'
+                };
+
+                // If file is uploaded, use file analysis endpoint
+                if (uploadedFile && uploadedFile.content) {
+                    endpoint = `${API_BASE}/api/analyze-file`;
+                    requestBody = {
+                        message: message,
+                        file_content: uploadedFile.content,
+                        file_name: uploadedFile.name,
+                        file_type: uploadedFile.type,
+                        web_search_enabled: true,
+                        session_id: 'test_session'
+                    };
+                }
+
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    addMessage(data.response, false);
+                    
+                    if (data.sources && data.sources.length > 0) {
+                        const sourcesText = data.sources.map(s => 
+                            s.type === 'web' ? `🌐 ${s.title} (${s.url})` : `📄 ${s.source}`
+                        ).join('\n');
+                        showResult(`✅ Response generated!\n\nSources:\n${sourcesText}`, 'success');
+                    }
+                } else {
+                    showResult(`❌ Error: ${data.detail}`, 'error');
+                    addMessage('Sorry, I encountered an error. Please try again.', false);
+                }
+            } catch (error) {
+                showResult(`❌ Network error: ${error.message}`, 'error');
+                addMessage('I\'m currently offline. Please try again later.', false);
+            }
+        }
+
+        function addMessage(content, isUser) {
+            const chatArea = document.getElementById('chatArea');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+            messageDiv.innerHTML = `${isUser ? '👤' : '🧮'} <strong>${isUser ? 'You' : 'CA Assistant'}:</strong> ${content}`;
+            chatArea.appendChild(messageDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function clearChat() {
+            const chatArea = document.getElementById('chatArea');
+            chatArea.innerHTML = '<div class="message bot-message">🧮 <strong>CA Assistant:</strong> Chat cleared. How can I help you?</div>';
+        }
+
+        async function testAPI() {
+            showResult('🔍 Testing API connection...', 'loading');
+            
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                
+                if (response.ok && data.status === 'healthy') {
+                    showResult(`✅ API Connection Successful!\n\nStatus: ${data.status}\nServices: ${JSON.stringify(data.services, null, 2)}`, 'success');
+                } else {
+                    showResult(`❌ API Error: ${JSON.stringify(data)}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Connection Error: ${error.message}`, 'error');
+            }
+        }
+
+        function showResult(content, type = 'success') {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result ${type}`;
+            resultDiv.textContent = content;
+            resultsDiv.appendChild(resultDiv);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Enter key support
+        document.getElementById('messageInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Auto-test API on load
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(testAPI, 1000);
+        });
+    </script>
+</body>
+</html>
